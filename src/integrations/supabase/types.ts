@@ -103,6 +103,60 @@ export type Database = {
           },
         ]
       }
+      debts: {
+        Row: {
+          amount: number
+          canteen_id: string
+          created_at: string
+          id: string
+          note: string
+          order_id: string | null
+          paid: boolean
+          paid_at: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          canteen_id: string
+          created_at?: string
+          id?: string
+          note?: string
+          order_id?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          canteen_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          order_id?: string | null
+          paid?: boolean
+          paid_at?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "debts_canteen_id_fkey"
+            columns: ["canteen_id"]
+            isOneToOne: false
+            referencedRelation: "canteens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "debts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deleted_accounts: {
         Row: {
           deleted_at: string
@@ -126,6 +180,7 @@ export type Database = {
           body: string
           created_at: string
           id: string
+          is_anonymous: boolean
           post_id: string
           user_id: string
         }
@@ -133,6 +188,7 @@ export type Database = {
           body: string
           created_at?: string
           id?: string
+          is_anonymous?: boolean
           post_id: string
           user_id: string
         }
@@ -140,6 +196,7 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          is_anonymous?: boolean
           post_id?: string
           user_id?: string
         }
@@ -159,6 +216,7 @@ export type Database = {
           canteen_id: string | null
           created_at: string
           id: string
+          is_anonymous: boolean
           title: string
           updated_at: string
           user_id: string
@@ -168,6 +226,7 @@ export type Database = {
           canteen_id?: string | null
           created_at?: string
           id?: string
+          is_anonymous?: boolean
           title: string
           updated_at?: string
           user_id: string
@@ -177,6 +236,7 @@ export type Database = {
           canteen_id?: string | null
           created_at?: string
           id?: string
+          is_anonymous?: boolean
           title?: string
           updated_at?: string
           user_id?: string
@@ -454,6 +514,7 @@ export type Database = {
           language: string
           last_active_at: string
           presence: Database["public"]["Enums"]["presence_status"]
+          requested_canteen: string
           status_emoji: string
           status_text: string
           two_factor_enabled: boolean
@@ -471,6 +532,7 @@ export type Database = {
           language?: string
           last_active_at?: string
           presence?: Database["public"]["Enums"]["presence_status"]
+          requested_canteen?: string
           status_emoji?: string
           status_text?: string
           two_factor_enabled?: boolean
@@ -488,11 +550,127 @@ export type Database = {
           language?: string
           last_active_at?: string
           presence?: Database["public"]["Enums"]["presence_status"]
+          requested_canteen?: string
           status_emoji?: string
           status_text?: string
           two_factor_enabled?: boolean
           updated_at?: string
           username?: string
+        }
+        Relationships: []
+      }
+      promo_comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_anonymous: boolean
+          promo_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          is_anonymous?: boolean
+          promo_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_anonymous?: boolean
+          promo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_comments_promo_id_fkey"
+            columns: ["promo_id"]
+            isOneToOne: false
+            referencedRelation: "promos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promos: {
+        Row: {
+          banner_url: string | null
+          body: string
+          canteen_id: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          banner_url?: string | null
+          body?: string
+          canteen_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          banner_url?: string | null
+          body?: string
+          canteen_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promos_canteen_id_fkey"
+            columns: ["canteen_id"]
+            isOneToOne: false
+            referencedRelation: "canteens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          context: string
+          created_at: string
+          id: string
+          reason: string
+          reporter_id: string
+          status: string
+          target_id: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          context?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id: string
+          status?: string
+          target_id: string
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          status?: string
+          target_id?: string
+          target_type?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -565,6 +743,8 @@ export type Database = {
           food_rating: number
           food_type: string
           id: string
+          image_urls: string[]
+          is_anonymous: boolean
           order_id: string | null
           order_type: string
           price_per_person: number
@@ -580,6 +760,8 @@ export type Database = {
           food_rating?: number
           food_type?: string
           id?: string
+          image_urls?: string[]
+          is_anonymous?: boolean
           order_id?: string | null
           order_type?: string
           price_per_person?: number
@@ -595,6 +777,8 @@ export type Database = {
           food_rating?: number
           food_type?: string
           id?: string
+          image_urls?: string[]
+          is_anonymous?: boolean
           order_id?: string | null
           order_type?: string
           price_per_person?: number
