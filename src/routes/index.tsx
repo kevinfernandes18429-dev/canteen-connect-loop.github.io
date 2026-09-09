@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useI18n, formatRupiah } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { canteenImage } from "@/lib/canteen-images";
+import { ACTIVE_STATUSES } from "@/lib/constants";
 import heroImg from "@/assets/hero.jpg";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
