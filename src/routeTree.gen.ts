@@ -15,7 +15,6 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CanteensRouteImport } from './routes/canteens'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as ChatRouteImport } from './routes/chat'
-import { Route as ForumRouteImport } from './routes/forum'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PromosRouteImport } from './routes/promos'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -52,11 +51,6 @@ const CartRoute = CartRouteImport.update({
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForumRoute = ForumRouteImport.update({
-  id: '/forum',
-  path: '/forum',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrdersRoute = OrdersRouteImport.update({
@@ -102,7 +96,6 @@ export interface FileRoutesByFullPath {
   '/canteens': typeof CanteensRoute
   '/cart': typeof CartRoute
   '/chat': typeof ChatRoute
-  '/forum': typeof ForumRoute
   '/orders': typeof OrdersRoute
   '/promos': typeof PromosRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -118,7 +111,6 @@ export interface FileRoutesByTo {
   '/canteens': typeof CanteensRoute
   '/cart': typeof CartRoute
   '/chat': typeof ChatRoute
-  '/forum': typeof ForumRoute
   '/orders': typeof OrdersRoute
   '/promos': typeof PromosRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -135,7 +127,6 @@ export interface FileRoutesById {
   '/canteens': typeof CanteensRoute
   '/cart': typeof CartRoute
   '/chat': typeof ChatRoute
-  '/forum': typeof ForumRoute
   '/orders': typeof OrdersRoute
   '/promos': typeof PromosRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -153,7 +144,6 @@ export interface FileRouteTypes {
     | '/canteens'
     | '/cart'
     | '/chat'
-    | '/forum'
     | '/orders'
     | '/promos'
     | '/reset-password'
@@ -169,7 +159,6 @@ export interface FileRouteTypes {
     | '/canteens'
     | '/cart'
     | '/chat'
-    | '/forum'
     | '/orders'
     | '/promos'
     | '/reset-password'
@@ -185,7 +174,6 @@ export interface FileRouteTypes {
     | '/canteens'
     | '/cart'
     | '/chat'
-    | '/forum'
     | '/orders'
     | '/promos'
     | '/reset-password'
@@ -202,7 +190,6 @@ export interface RootRouteChildren {
   CanteensRoute: typeof CanteensRoute
   CartRoute: typeof CartRoute
   ChatRoute: typeof ChatRoute
-  ForumRoute: typeof ForumRoute
   OrdersRoute: typeof OrdersRoute
   PromosRoute: typeof PromosRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -254,13 +241,6 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof ChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forum': {
-      id: '/forum'
-      path: '/forum'
-      fullPath: '/forum'
-      preLoaderRoute: typeof ForumRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orders': {
@@ -322,7 +302,6 @@ const rootRouteChildren: RootRouteChildren = {
   CanteensRoute: CanteensRoute,
   CartRoute: CartRoute,
   ChatRoute: ChatRoute,
-  ForumRoute: ForumRoute,
   OrdersRoute: OrdersRoute,
   PromosRoute: PromosRoute,
   ResetPasswordRoute: ResetPasswordRoute,
