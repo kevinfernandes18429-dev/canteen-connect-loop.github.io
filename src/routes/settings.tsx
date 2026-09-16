@@ -210,18 +210,9 @@ function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="security" className="mt-6 space-y-5">
-          <div className="surface-card flex items-center justify-between gap-4 p-5">
-            <Label htmlFor="twofa">{t("settings.2fa")}</Label>
-            <Switch
-              id="twofa"
-              checked={form.two_factor_enabled}
-              onCheckedChange={(v) => setForm({ ...form, two_factor_enabled: v })}
-            />
-          </div>
-          <Button onClick={save} disabled={saving}>
-            {t("settings.save")}
-          </Button>
+          <TwoFactorPanel />
         </TabsContent>
+
 
         <TabsContent value="lang" className="mt-6 space-y-5">
           <div className="space-y-1.5">
