@@ -95,7 +95,9 @@ export function ReviewEditor({
   saving?: boolean;
 }) {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [form, setForm] = useState<ReviewForm>(initial);
+  const [uploading, setUploading] = useState(false);
 
   // reset when re-opened with different initial values
   const [seen, setSeen] = useState(initial);
@@ -110,11 +112,43 @@ export function ReviewEditor({
     queryFn: async () => (await supabase.from("menu_items").select("name, price").eq("canteen_id", canteenId).order("name")).data ?? [],
   });
 
+  const { data: myOrders } = useQuery({
+    queryKey: ["my-canteen-orders", canteenId, user?.id],
+    enabled: open && !!user,
+    queryFn: async () =>
+      (
+        await supabase
+          .from("orders")
+          .select("id, pickup_date, total, status")
+          .eq("canteen_id", canteenId)
+          .eq("user_id", user!.id)
+          .order("created_at", { ascending: false })
+          .limit(20)
+      ).data ?? [],
+  });
+
   const toggleFood = (name: string, on: boolean) => {
     const foods = on ? [...new Set([...form.foods, name])] : form.foods.filter((f) => f !== name);
     const price = (menu ?? []).filter((m) => foods.includes(m.name)).reduce((s, m) => s + m.price, 0);
     setForm({ ...form, foods, price });
   };
+
+  const addPhotos = async (files: FileList | null) => {
+    if (!files || !user) return;
+    setUploading(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files).slice(0, 4)) {
+        urls.push(await uploadMedia(user.id, file, "review"));
+      }
+      setForm((f) => ({ ...f, images: [...f.images, ...urls].slice(0, 4) }));
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
