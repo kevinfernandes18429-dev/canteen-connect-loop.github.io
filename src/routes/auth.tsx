@@ -110,14 +110,24 @@ function AuthPage() {
   };
 
   const handleVerifyOtp = async () => {
+    const token = otpCode.replace(/\D/g, "");
+    if (token.length !== 6) {
+      toast.error(t("auth.2faDesc"));
+      return;
+    }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({ email: otpEmail, token: otpCode.trim(), type: "email" });
+      let { error } = await supabase.auth.verifyOtp({ email: otpEmail, token, type: "email" });
+      if (error) {
+        const retry = await supabase.auth.verifyOtp({ email: otpEmail, token, type: "magiclink" });
+        error = retry.error;
+      }
       if (error) {
         toast.error(error.message);
         return;
       }
       setOtpOpen(false);
+      setOtpCode("");
       void navigate({ to: "/" });
     } finally {
       setLoading(false);
@@ -128,6 +138,10 @@ function AuthPage() {
     e.preventDefault();
     if (suRole === "student" && !isClassComplete(suClass)) {
       toast.error(t("auth.class"));
+      return;
+    }
+    if (suRole === "canteen_owner" && suCanteen.trim().length < 2) {
+      toast.error(t("seller.canteenName"));
       return;
     }
     const parsed = signUpSchema.safeParse({
@@ -156,8 +170,9 @@ function AuthPage() {
           data: {
             username: parsed.data.username.toLowerCase(),
             full_name: parsed.data.fullName,
-            class: parsed.data.klass,
+            class: suRole === "student" ? parsed.data.klass : "",
             role: suRole,
+            requested_canteen: suRole === "canteen_owner" ? suCanteen.trim().slice(0, 80) : "",
             language: window.localStorage.getItem("kantin-lang") ?? "id",
           },
         },
@@ -167,6 +182,7 @@ function AuthPage() {
         return;
       }
       toast.success(t("auth.verifySent"));
+
     } finally {
       setLoading(false);
     }
