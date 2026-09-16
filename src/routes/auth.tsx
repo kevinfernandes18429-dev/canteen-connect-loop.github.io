@@ -275,12 +275,26 @@ function AuthPage() {
                 <Label htmlFor="su-name">{t("auth.fullName")}</Label>
                 <Input id="su-name" value={suFullName} onChange={(e) => setSuFullName(e.target.value)} required maxLength={80} />
               </div>
-              {suRole === "student" && (
+              {suRole === "student" ? (
                 <div className="space-y-1.5">
                   <Label>{t("auth.class")}</Label>
                   <ClassPicker value={suClass} onChange={setSuClass} />
                 </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-canteen">{t("seller.canteenName")}</Label>
+                  <Input
+                    id="su-canteen"
+                    value={suCanteen}
+                    onChange={(e) => setSuCanteen(e.target.value)}
+                    required
+                    maxLength={80}
+                    placeholder="Takoya"
+                  />
+                  <p className="text-xs text-muted-foreground">{t("seller.pending")}</p>
+                </div>
               )}
+
               <div className="space-y-1.5">
                 <Label htmlFor="su-email">{t("auth.email")}</Label>
                 <Input id="su-email" type="email" value={suEmail} onChange={(e) => setSuEmail(e.target.value)} required maxLength={255} />
