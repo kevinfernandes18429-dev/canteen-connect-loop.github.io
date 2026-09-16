@@ -62,7 +62,9 @@ function AuthPage() {
   const [suPassword, setSuPassword] = useState("");
   const [suFullName, setSuFullName] = useState("");
   const [suClass, setSuClass] = useState<ClassValue>(EMPTY_CLASS);
+  const [suCanteen, setSuCanteen] = useState("");
   const [suRole, setSuRole] = useState<"student" | "canteen_owner">("student");
+
 
   // dialogs
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -75,28 +77,14 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) {
         const { data: deleted } = await supabase.rpc("was_account_deleted", { _email: email.trim() });
         toast.error(deleted ? t("auth.deleted") : error.message);
         return;
       }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("two_factor_enabled")
-        .eq("id", data.user.id)
-        .maybeSingle();
-
-      if (profile?.two_factor_enabled) {
-        await supabase.auth.signOut();
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email: email.trim(),
-          options: { shouldCreateUser: false },
-        });
-        if (otpError) {
-          toast.error(otpError.message);
-          return;
-        }
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.nextLevel === "aal2" && aal.nextLevel !== aal.currentLevel) {
         setOtpEmail(email.trim());
         setOtpOpen(true);
         return;
@@ -108,24 +96,41 @@ function AuthPage() {
   };
 
   const handleVerifyOtp = async () => {
+    const token = otpCode.replace(/\D/g, "");
+    if (token.length !== 6) {
+      toast.error(t("auth.2faDesc"));
+      return;
+    }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({ email: otpEmail, token: otpCode.trim(), type: "email" });
+      const { data: list } = await supabase.auth.mfa.listFactors();
+      const factor = (list?.totp ?? []).find((f) => f.status === "verified");
+      if (!factor) {
+        toast.error(t("common.error"));
+        return;
+      }
+      const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code: token });
       if (error) {
         toast.error(error.message);
         return;
       }
       setOtpOpen(false);
+      setOtpCode("");
       void navigate({ to: "/" });
     } finally {
       setLoading(false);
     }
   };
 
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (suRole === "student" && !isClassComplete(suClass)) {
       toast.error(t("auth.class"));
+      return;
+    }
+    if (suRole === "canteen_owner" && suCanteen.trim().length < 2) {
+      toast.error(t("seller.canteenName"));
       return;
     }
     const parsed = signUpSchema.safeParse({
@@ -154,8 +159,9 @@ function AuthPage() {
           data: {
             username: parsed.data.username.toLowerCase(),
             full_name: parsed.data.fullName,
-            class: parsed.data.klass,
+            class: suRole === "student" ? parsed.data.klass : "",
             role: suRole,
+            requested_canteen: suRole === "canteen_owner" ? suCanteen.trim().slice(0, 80) : "",
             language: window.localStorage.getItem("kantin-lang") ?? "id",
           },
         },
@@ -165,6 +171,7 @@ function AuthPage() {
         return;
       }
       toast.success(t("auth.verifySent"));
+
     } finally {
       setLoading(false);
     }
@@ -257,12 +264,26 @@ function AuthPage() {
                 <Label htmlFor="su-name">{t("auth.fullName")}</Label>
                 <Input id="su-name" value={suFullName} onChange={(e) => setSuFullName(e.target.value)} required maxLength={80} />
               </div>
-              {suRole === "student" && (
+              {suRole === "student" ? (
                 <div className="space-y-1.5">
                   <Label>{t("auth.class")}</Label>
                   <ClassPicker value={suClass} onChange={setSuClass} />
                 </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label htmlFor="su-canteen">{t("seller.canteenName")}</Label>
+                  <Input
+                    id="su-canteen"
+                    value={suCanteen}
+                    onChange={(e) => setSuCanteen(e.target.value)}
+                    required
+                    maxLength={80}
+                    placeholder="Takoya"
+                  />
+                  <p className="text-xs text-muted-foreground">{t("seller.pending")}</p>
+                </div>
               )}
+
               <div className="space-y-1.5">
                 <Label htmlFor="su-email">{t("auth.email")}</Label>
                 <Input id="su-email" type="email" value={suEmail} onChange={(e) => setSuEmail(e.target.value)} required maxLength={255} />

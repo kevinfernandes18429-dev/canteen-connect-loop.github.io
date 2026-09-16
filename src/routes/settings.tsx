@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -210,18 +209,9 @@ function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="security" className="mt-6 space-y-5">
-          <div className="surface-card flex items-center justify-between gap-4 p-5">
-            <Label htmlFor="twofa">{t("settings.2fa")}</Label>
-            <Switch
-              id="twofa"
-              checked={form.two_factor_enabled}
-              onCheckedChange={(v) => setForm({ ...form, two_factor_enabled: v })}
-            />
-          </div>
-          <Button onClick={save} disabled={saving}>
-            {t("settings.save")}
-          </Button>
+          <TwoFactorPanel />
         </TabsContent>
+
 
         <TabsContent value="lang" className="mt-6 space-y-5">
           <div className="space-y-1.5">
@@ -259,6 +249,112 @@ function SettingsPage() {
           </Button>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+function TwoFactorPanel() {
+  const { t } = useI18n();
+  const { user, refreshProfile } = useAuth();
+  const [factors, setFactors] = useState<{ id: string; status: string }[]>([]);
+  const [enroll, setEnroll] = useState<{ id: string; qr: string; secret: string } | null>(null);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    const { data } = await supabase.auth.mfa.listFactors();
+    setFactors((data?.totp ?? []).map((f) => ({ id: f.id, status: f.status })));
+  };
+
+  useEffect(() => {
+    void load();
+  }, [user?.id]);
+
+  const verified = factors.find((f) => f.status === "verified");
+
+  const start = async () => {
+    setBusy(true);
+    const { data, error } = await supabase.auth.mfa.enroll({
+      factorType: "totp",
+      friendlyName: "Kantin " + Date.now(),
+    });
+    setBusy(false);
+    if (error || !data) {
+      toast.error(error?.message ?? t("common.error"));
+      return;
+    }
+    setEnroll({ id: data.id, qr: data.totp.qr_code, secret: data.totp.secret });
+  };
+
+  const confirm = async () => {
+    if (!enroll) return;
+    const token = code.replace(/\D/g, "");
+    if (token.length !== 6) return;
+    setBusy(true);
+    const { data: ch, error: chErr } = await supabase.auth.mfa.challenge({ factorId: enroll.id });
+    if (chErr || !ch) {
+      setBusy(false);
+      toast.error(chErr?.message ?? t("common.error"));
+      return;
+    }
+    const { error } = await supabase.auth.mfa.verify({ factorId: enroll.id, challengeId: ch.id, code: token });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (user) await supabase.from("profiles").update({ two_factor_enabled: true }).eq("id", user.id);
+    setEnroll(null);
+    setCode("");
+    await load();
+    await refreshProfile();
+    toast.success(t("settings.saved"));
+  };
+
+  const disable = async () => {
+    if (!verified) return;
+    setBusy(true);
+    const { error } = await supabase.auth.mfa.unenroll({ factorId: verified.id });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (user) await supabase.from("profiles").update({ two_factor_enabled: false }).eq("id", user.id);
+    await load();
+    await refreshProfile();
+    toast.success(t("settings.saved"));
+  };
+
+  return (
+    <div className="surface-card space-y-4 p-5">
+      <div>
+        <p className="font-semibold">{t("settings.2fa")}</p>
+        <p className="text-sm text-muted-foreground">{t("auth.2faDesc")}</p>
+      </div>
+
+      {verified ? (
+        <Button variant="destructive" onClick={disable} disabled={busy}>
+          {t("common.delete")}
+        </Button>
+      ) : enroll ? (
+        <div className="space-y-3">
+          <img src={enroll.qr} alt="QR" className="h-44 w-44 rounded-xl bg-white p-2" />
+          <p className="break-all text-xs text-muted-foreground">{enroll.secret}</p>
+          <Input value={code} inputMode="numeric" maxLength={6} placeholder="123456" onChange={(e) => setCode(e.target.value)} />
+          <div className="flex gap-2">
+            <Button onClick={confirm} disabled={busy || code.replace(/\D/g, "").length !== 6}>
+              {t("auth.verify")}
+            </Button>
+            <Button variant="outline" onClick={() => setEnroll(null)}>
+              {t("common.cancel")}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button onClick={start} disabled={busy}>
+          {t("auth.2faTitle")}
+        </Button>
+      )}
     </div>
   );
 }

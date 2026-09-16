@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ReportButton } from "@/components/app/ReportButton";
+
 
 export const Route = createFileRoute("/chat")({
   validateSearch: z.object({
@@ -231,6 +233,14 @@ function ChatPage() {
         setAddOpen(false);
         return;
       }
+      const { data: targetRole } = await supabase.from("user_roles").select("role").eq("user_id", p.id).maybeSingle();
+      const tr = targetRole?.role ?? "student";
+      // Students chat only with canteens; owners chat with admins/other owners
+      if (role === "student" || tr === "student") {
+        toast.error(t("chat.restricted"));
+        return;
+      }
+
       const existing = (contacts ?? []).find((c) => c.kind === "dm" && (c.peerId === p.id || c.studentId === p.id));
       if (existing) {
         setActiveKey(existing.key);
@@ -452,7 +462,7 @@ function Thread({ contact, onBack }: { contact: Contact; onBack: () => void }) {
                   <span className="rounded-full bg-card px-3 py-1 text-[11px] text-muted-foreground shadow-sm">{day}</span>
                 </div>
               )}
-              <div className={"flex " + (mine ? "justify-end" : "justify-start")}>
+              <div className={"flex items-center gap-1 " + (mine ? "justify-end" : "justify-start")}>
                 <div
                   className={
                     "max-w-[78%] rounded-2xl px-3 py-2 text-sm shadow-sm transition-transform " +
@@ -464,12 +474,14 @@ function Thread({ contact, onBack }: { contact: Contact; onBack: () => void }) {
                     {d.toLocaleTimeString(lang === "en" ? "en-GB" : "id-ID", { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
+                {!mine && <ReportButton targetType="message" targetId={m.id} context={m.body.slice(0, 120)} />}
               </div>
             </div>
           );
         })}
         <div ref={bottomRef} />
       </div>
+
 
       <form
         onSubmit={(e) => { e.preventDefault(); void send(); }}
