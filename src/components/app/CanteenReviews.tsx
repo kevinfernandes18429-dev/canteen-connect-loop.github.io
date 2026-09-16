@@ -58,10 +58,25 @@ type ReviewForm = {
   foods: string[];
   price: number;
   quantity: number;
+  anonymous: boolean;
+  images: string[];
+  orderId: string | null;
 };
 
-const EMPTY_FORM: ReviewForm = { food: 5, service: 5, body: "", orderType: "", foods: [], price: 0, quantity: 1 };
+const EMPTY_FORM: ReviewForm = {
+  food: 5,
+  service: 5,
+  body: "",
+  orderType: "",
+  foods: [],
+  price: 0,
+  quantity: 1,
+  anonymous: false,
+  images: [],
+  orderId: null,
+};
 const QTY_OPTIONS = Array.from({ length: 20 }, (_, i) => i + 1);
+
 
 /** Shared review editor used by students (create/edit own) and admins (edit any). */
 export function ReviewEditor({
