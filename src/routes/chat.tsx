@@ -231,6 +231,14 @@ function ChatPage() {
         setAddOpen(false);
         return;
       }
+      const { data: targetRole } = await supabase.from("user_roles").select("role").eq("user_id", p.id).maybeSingle();
+      const tr = targetRole?.role ?? "student";
+      // Students chat only with canteens; owners chat with admins/other owners
+      if (role === "student" || tr === "student") {
+        toast.error(t("chat.restricted"));
+        return;
+      }
+
       const existing = (contacts ?? []).find((c) => c.kind === "dm" && (c.peerId === p.id || c.studentId === p.id));
       if (existing) {
         setActiveKey(existing.key);
