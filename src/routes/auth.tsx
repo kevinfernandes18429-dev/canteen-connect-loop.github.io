@@ -77,28 +77,14 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) {
         const { data: deleted } = await supabase.rpc("was_account_deleted", { _email: email.trim() });
         toast.error(deleted ? t("auth.deleted") : error.message);
         return;
       }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("two_factor_enabled")
-        .eq("id", data.user.id)
-        .maybeSingle();
-
-      if (profile?.two_factor_enabled) {
-        await supabase.auth.signOut();
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email: email.trim(),
-          options: { shouldCreateUser: false },
-        });
-        if (otpError) {
-          toast.error(otpError.message);
-          return;
-        }
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.nextLevel === "aal2" && aal.nextLevel !== aal.currentLevel) {
         setOtpEmail(email.trim());
         setOtpOpen(true);
         return;
@@ -117,11 +103,13 @@ function AuthPage() {
     }
     setLoading(true);
     try {
-      let { error } = await supabase.auth.verifyOtp({ email: otpEmail, token, type: "email" });
-      if (error) {
-        const retry = await supabase.auth.verifyOtp({ email: otpEmail, token, type: "magiclink" });
-        error = retry.error;
+      const { data: list } = await supabase.auth.mfa.listFactors();
+      const factor = (list?.totp ?? []).find((f) => f.status === "verified");
+      if (!factor) {
+        toast.error(t("common.error"));
+        return;
       }
+      const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code: token });
       if (error) {
         toast.error(error.message);
         return;
@@ -133,6 +121,7 @@ function AuthPage() {
       setLoading(false);
     }
   };
+
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
