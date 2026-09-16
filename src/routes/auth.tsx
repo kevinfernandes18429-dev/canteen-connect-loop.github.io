@@ -62,7 +62,9 @@ function AuthPage() {
   const [suPassword, setSuPassword] = useState("");
   const [suFullName, setSuFullName] = useState("");
   const [suClass, setSuClass] = useState<ClassValue>(EMPTY_CLASS);
+  const [suCanteen, setSuCanteen] = useState("");
   const [suRole, setSuRole] = useState<"student" | "canteen_owner">("student");
+
 
   // dialogs
   const [forgotOpen, setForgotOpen] = useState(false);
