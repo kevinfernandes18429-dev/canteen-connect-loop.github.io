@@ -351,6 +351,14 @@ function CanteensTab() {
     void qc.invalidateQueries({ queryKey: ["admin-canteens"] });
     void qc.invalidateQueries({ queryKey: ["admin-canteens-lite"] });
   };
+  const removeCanteen = async (id: string) => {
+    const { error } = await supabase.from("canteens").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(t("admin.deleteCanteen"));
+    void qc.invalidateQueries({ queryKey: ["admin-canteens"] });
+    void qc.invalidateQueries({ queryKey: ["admin-canteens-lite"] });
+  };
+
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
