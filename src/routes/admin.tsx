@@ -710,7 +710,7 @@ function ReportsTab() {
       {(data ?? []).length === 0 && <p className="text-sm text-muted-foreground">{t("admin.noPending")}</p>}
       {(data ?? []).map((r) => (
         <div key={r.id} className="surface-card flex flex-wrap items-start gap-3 p-3">
-          <Checkbox checked={sel.has(r.id)} onCheckedChange={(v: boolean | "indeterminate") => sel.toggle(r.id, v === true)} />
+          <Checkbox checked={sel.selected.has(r.id)} onCheckedChange={(v) => sel.toggle(r.id, !!v)} />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold">
               {r.target_type} <span className="font-normal text-muted-foreground">@{r.reporter}</span>
