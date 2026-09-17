@@ -326,7 +326,11 @@ export function CanteenReviews({ canteenId }: { canteenId: string }) {
         quantity: Math.min(20, Math.max(1, Math.round(f.quantity))),
         food_rating: f.food,
         service_rating: f.service,
+        is_anonymous: f.anonymous,
+        image_urls: f.images.slice(0, 4),
+        order_id: f.orderId,
       };
+
       const { error } = editingId
         ? await supabase.from("reviews").update(payload).eq("id", editingId)
         : await supabase.from("reviews").insert({ canteen_id: canteenId, user_id: user!.id, ...payload });
