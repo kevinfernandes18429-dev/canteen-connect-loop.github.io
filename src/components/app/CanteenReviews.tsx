@@ -361,7 +361,11 @@ export function CanteenReviews({ canteenId }: { canteenId: string }) {
       foods: r.food_type ? r.food_type.split(", ").filter(Boolean) : [],
       price: r.price_per_person,
       quantity: r.quantity ?? 1,
+      anonymous: r.is_anonymous ?? false,
+      images: r.image_urls ?? [],
+      orderId: r.order_id ?? null,
     });
+
     setOpen(true);
   };
 
