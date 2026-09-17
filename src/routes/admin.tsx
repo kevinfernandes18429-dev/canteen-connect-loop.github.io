@@ -759,6 +759,7 @@ function AdminPage() {
           <TabsTrigger value="chats">{t("admin.chats")}</TabsTrigger>
           <TabsTrigger value="forum">{t("admin.forum")}</TabsTrigger>
           <TabsTrigger value="reviews">{t("admin.reviews")}</TabsTrigger>
+          <TabsTrigger value="reports">{t("admin.reports")}</TabsTrigger>
           <TabsTrigger value="words">{t("admin.words")}</TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="mt-6"><UsersTab /></TabsContent>
@@ -767,6 +768,7 @@ function AdminPage() {
         <TabsContent value="chats" className="mt-6"><ChatsTab /></TabsContent>
         <TabsContent value="forum" className="mt-6"><ForumTab /></TabsContent>
         <TabsContent value="reviews" className="mt-6"><ReviewsTab /></TabsContent>
+        <TabsContent value="reports" className="mt-6"><ReportsTab /></TabsContent>
         <TabsContent value="words" className="mt-6"><WordsTab /></TabsContent>
       </Tabs>
     </div>
