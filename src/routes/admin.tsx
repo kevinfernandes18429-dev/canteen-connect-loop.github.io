@@ -268,7 +268,9 @@ function OwnerSignupsTab() {
         </p>
         <p className="truncate text-xs text-muted-foreground">
           {u.email} · {t("admin.registeredAt")}: {new Date(u.created_at).toLocaleDateString(lang === "en" ? "en-GB" : "id-ID")}
+          {u.requested_canteen ? ` · ${t("admin.requestedCanteen")}: ${u.requested_canteen}` : ""}
         </p>
+
       </div>
       {actions}
     </div>
