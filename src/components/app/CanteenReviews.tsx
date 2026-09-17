@@ -477,6 +477,15 @@ export function CanteenReviews({ canteenId }: { canteenId: string }) {
                     </span>
                   </div>
                   {r.body && <p className="mt-3 whitespace-pre-wrap text-sm">{r.body}</p>}
+                  {photos.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {photos.map((url) => (
+                        <a key={url} href={url} target="_blank" rel="noreferrer" className="hover-lift">
+                          <img src={url} alt={t("review.photos")} loading="lazy" className="h-24 w-24 rounded-xl object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     {r.order_type && <span>{t("review.orderType")}: {orderTypeLabel(r.order_type, t)}</span>}
                     {r.food_type && <span>{t("review.foodType")}: {r.food_type}</span>}
@@ -497,7 +506,11 @@ export function CanteenReviews({ canteenId }: { canteenId: string }) {
                         {t("review.reply")}
                       </Button>
                     )}
+                    {user && r.user_id !== user.id && (
+                      <ReportButton targetType="review" targetId={r.id} context={r.body.slice(0, 120)} className="ml-1" />
+                    )}
                   </div>
+
 
                   {replies.length > 0 && (
                     <div className="mt-3 space-y-2 border-l-2 border-border pl-3">
