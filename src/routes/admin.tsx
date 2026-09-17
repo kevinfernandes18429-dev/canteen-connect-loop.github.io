@@ -375,9 +375,13 @@ function CanteensTab() {
             <Input value={d.name} maxLength={60} onChange={(e) => set({ name: e.target.value })} />
             <Textarea value={d.description} rows={2} maxLength={300} placeholder="Deskripsi (ID)" onChange={(e) => set({ description: e.target.value })} />
             <Textarea value={d.description_en} rows={2} maxLength={300} placeholder="Description (EN)" onChange={(e) => set({ description_en: e.target.value })} />
-            <Button size="sm" onClick={() => save(c.id)}>
-              {t("settings.save")}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={() => save(c.id)}>
+                {t("settings.save")}
+              </Button>
+              <ConfirmDelete text={t("admin.deleteCanteenConfirm")} label={t("admin.deleteCanteen")} onConfirm={() => removeCanteen(c.id)} />
+            </div>
+
           </div>
         );
       })}
