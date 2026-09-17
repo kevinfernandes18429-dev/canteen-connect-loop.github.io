@@ -420,19 +420,27 @@ export function CanteenReviews({ canteenId }: { canteenId: string }) {
           const mine = votes.find((v) => v.user_id === user?.id)?.value ?? 0;
           const replies = (r.review_replies ?? []) as { id: string; body: string; user_id: string }[];
           const canManage = isAdmin || r.user_id === user?.id;
+          const anon = !!r.is_anonymous && !isAdmin && r.user_id !== user?.id;
+          const photos = (r.image_urls ?? []) as string[];
           return (
             <article key={r.id} className="surface-card p-5">
               <div className="flex items-start gap-3">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={author?.avatar_url ?? undefined} />
-                  <AvatarFallback className="text-xs">{(author?.username ?? "?").slice(0, 2).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={anon ? undefined : author?.avatar_url ?? undefined} />
+                  <AvatarFallback className="text-xs">{anon ? "?" : (author?.username ?? "?").slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link to="/u/$username" params={{ username: author?.username ?? "" }} className="text-sm font-semibold hover:underline">
-                      @{author?.username}
-                    </Link>
-                    <span className="text-xs text-muted-foreground">{author?.class ? formatClass(author.class, lang) : ""}</span>
+                    {anon ? (
+                      <span className="text-sm font-semibold">{t("anon.label")}</span>
+                    ) : (
+                      <Link to="/u/$username" params={{ username: author?.username ?? "" }} className="text-sm font-semibold hover:underline">
+                        @{author?.username}
+                        {r.is_anonymous ? " · " + t("anon.label") : ""}
+                      </Link>
+                    )}
+                    <span className="text-xs text-muted-foreground">{!anon && author?.class ? formatClass(author.class, lang) : ""}</span>
+
                     {canManage && (
                       <span className="ml-auto flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t("review.edit")} onClick={() => openEdit(r)}>
