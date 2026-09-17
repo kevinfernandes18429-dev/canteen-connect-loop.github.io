@@ -561,7 +561,7 @@ function ReviewsTab() {
     if (!editing) return;
     const { error } = await supabase
       .from("reviews")
-      .update({ body: f.body.trim().slice(0, 1000), order_type: f.orderType, food_type: f.foods.join(", ").slice(0, 200), price_per_person: f.price, food_rating: f.food, service_rating: f.service })
+      .update({ body: f.body.trim().slice(0, 1000), order_type: f.orderType, food_type: f.foods.join(", ").slice(0, 200), price_per_person: f.price, food_rating: f.food, service_rating: f.service, quantity: f.quantity, is_anonymous: f.anonymous, image_urls: f.images })
       .eq("id", editing.id);
     if (error) { toast.error(error.message.includes("BANNED_WORD") ? t("filter.blocked") : error.message); return; }
     setEditing(null);
