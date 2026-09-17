@@ -8,6 +8,9 @@ import { useAuth } from "@/lib/auth-context";
 import { useI18n, formatRupiah, type TKey } from "@/lib/i18n";
 import { formatClass } from "@/lib/classes";
 import { ORDER_TYPES } from "@/lib/constants";
+import { uploadMedia } from "@/lib/upload";
+import { ReportButton } from "@/components/app/ReportButton";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -217,12 +220,56 @@ export function ReviewEditor({
           </div>
           <p className="-mt-2 text-xs text-muted-foreground">{t("review.priceAuto")}</p>
           <div className="space-y-1.5">
+            <Label>{t("review.pickOrder")}</Label>
+            <Select
+              value={form.orderId ?? "none"}
+              onValueChange={(v) => setForm({ ...form, orderId: v === "none" ? null : v })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="none">{t("review.noOrder")}</SelectItem>
+                {(myOrders ?? []).map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.pickup_date} · {formatRupiah(o.total)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("review.photos")}</Label>
+            <Input type="file" accept="image/*" multiple disabled={uploading} onChange={(e) => void addPhotos(e.target.files)} />
+            {form.images.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {form.images.map((url) => (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => setForm({ ...form, images: form.images.filter((u) => u !== url) })}
+                    className="relative h-16 w-16 overflow-hidden rounded-lg border border-border"
+                    aria-label={t("common.delete")}
+                  >
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="space-y-1.5">
             <Label>{t("review.body")}</Label>
             <Textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} maxLength={1000} rows={4} />
           </div>
-          <Button className="w-full" onClick={() => onSave(form)} disabled={saving || !form.orderType}>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <Checkbox checked={form.anonymous} onCheckedChange={(v) => setForm({ ...form, anonymous: !!v })} />
+            <span>{t("anon.post")}</span>
+          </label>
+          <p className="-mt-1 text-xs text-muted-foreground">{t("anon.adminNote")}</p>
+          <Button className="w-full" onClick={() => onSave(form)} disabled={saving || uploading || !form.orderType}>
             {t("review.submit")}
           </Button>
+
         </div>
       </DialogContent>
     </Dialog>
@@ -282,7 +329,11 @@ export function CanteenReviews({ canteenId }: { canteenId: string }) {
         quantity: Math.min(20, Math.max(1, Math.round(f.quantity))),
         food_rating: f.food,
         service_rating: f.service,
+        is_anonymous: f.anonymous,
+        image_urls: f.images.slice(0, 4),
+        order_id: f.orderId,
       };
+
       const { error } = editingId
         ? await supabase.from("reviews").update(payload).eq("id", editingId)
         : await supabase.from("reviews").insert({ canteen_id: canteenId, user_id: user!.id, ...payload });
@@ -313,7 +364,11 @@ export function CanteenReviews({ canteenId }: { canteenId: string }) {
       foods: r.food_type ? r.food_type.split(", ").filter(Boolean) : [],
       price: r.price_per_person,
       quantity: r.quantity ?? 1,
+      anonymous: r.is_anonymous ?? false,
+      images: r.image_urls ?? [],
+      orderId: r.order_id ?? null,
     });
+
     setOpen(true);
   };
 
@@ -368,19 +423,27 @@ export function CanteenReviews({ canteenId }: { canteenId: string }) {
           const mine = votes.find((v) => v.user_id === user?.id)?.value ?? 0;
           const replies = (r.review_replies ?? []) as { id: string; body: string; user_id: string }[];
           const canManage = isAdmin || r.user_id === user?.id;
+          const anon = !!r.is_anonymous && !isAdmin && r.user_id !== user?.id;
+          const photos = (r.image_urls ?? []) as string[];
           return (
             <article key={r.id} className="surface-card p-5">
               <div className="flex items-start gap-3">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={author?.avatar_url ?? undefined} />
-                  <AvatarFallback className="text-xs">{(author?.username ?? "?").slice(0, 2).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={anon ? undefined : author?.avatar_url ?? undefined} />
+                  <AvatarFallback className="text-xs">{anon ? "?" : (author?.username ?? "?").slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link to="/u/$username" params={{ username: author?.username ?? "" }} className="text-sm font-semibold hover:underline">
-                      @{author?.username}
-                    </Link>
-                    <span className="text-xs text-muted-foreground">{author?.class ? formatClass(author.class, lang) : ""}</span>
+                    {anon ? (
+                      <span className="text-sm font-semibold">{t("anon.label")}</span>
+                    ) : (
+                      <Link to="/u/$username" params={{ username: author?.username ?? "" }} className="text-sm font-semibold hover:underline">
+                        @{author?.username}
+                        {r.is_anonymous ? " · " + t("anon.label") : ""}
+                      </Link>
+                    )}
+                    <span className="text-xs text-muted-foreground">{!anon && author?.class ? formatClass(author.class, lang) : ""}</span>
+
                     {canManage && (
                       <span className="ml-auto flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t("review.edit")} onClick={() => openEdit(r)}>
@@ -417,6 +480,15 @@ export function CanteenReviews({ canteenId }: { canteenId: string }) {
                     </span>
                   </div>
                   {r.body && <p className="mt-3 whitespace-pre-wrap text-sm">{r.body}</p>}
+                  {photos.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {photos.map((url) => (
+                        <a key={url} href={url} target="_blank" rel="noreferrer" className="hover-lift">
+                          <img src={url} alt={t("review.photos")} loading="lazy" className="h-24 w-24 rounded-xl object-cover" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     {r.order_type && <span>{t("review.orderType")}: {orderTypeLabel(r.order_type, t)}</span>}
                     {r.food_type && <span>{t("review.foodType")}: {r.food_type}</span>}
@@ -437,7 +509,11 @@ export function CanteenReviews({ canteenId }: { canteenId: string }) {
                         {t("review.reply")}
                       </Button>
                     )}
+                    {user && r.user_id !== user.id && (
+                      <ReportButton targetType="review" targetId={r.id} context={r.body.slice(0, 120)} className="ml-1" />
+                    )}
                   </div>
+
 
                   {replies.length > 0 && (
                     <div className="mt-3 space-y-2 border-l-2 border-border pl-3">

@@ -268,7 +268,9 @@ function OwnerSignupsTab() {
         </p>
         <p className="truncate text-xs text-muted-foreground">
           {u.email} · {t("admin.registeredAt")}: {new Date(u.created_at).toLocaleDateString(lang === "en" ? "en-GB" : "id-ID")}
+          {u.requested_canteen ? ` · ${t("admin.requestedCanteen")}: ${u.requested_canteen}` : ""}
         </p>
+
       </div>
       {actions}
     </div>
@@ -349,6 +351,14 @@ function CanteensTab() {
     void qc.invalidateQueries({ queryKey: ["admin-canteens"] });
     void qc.invalidateQueries({ queryKey: ["admin-canteens-lite"] });
   };
+  const removeCanteen = async (id: string) => {
+    const { error } = await supabase.from("canteens").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(t("admin.deleteCanteen"));
+    void qc.invalidateQueries({ queryKey: ["admin-canteens"] });
+    void qc.invalidateQueries({ queryKey: ["admin-canteens-lite"] });
+  };
+
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -373,9 +383,13 @@ function CanteensTab() {
             <Input value={d.name} maxLength={60} onChange={(e) => set({ name: e.target.value })} />
             <Textarea value={d.description} rows={2} maxLength={300} placeholder="Deskripsi (ID)" onChange={(e) => set({ description: e.target.value })} />
             <Textarea value={d.description_en} rows={2} maxLength={300} placeholder="Description (EN)" onChange={(e) => set({ description_en: e.target.value })} />
-            <Button size="sm" onClick={() => save(c.id)}>
-              {t("settings.save")}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={() => save(c.id)}>
+                {t("settings.save")}
+              </Button>
+              <ConfirmDelete text={t("admin.deleteCanteenConfirm")} label={t("admin.deleteCanteen")} onConfirm={() => removeCanteen(c.id)} />
+            </div>
+
           </div>
         );
       })}
@@ -516,7 +530,7 @@ function ReviewsTab() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<{ id: string; canteenId: string } | null>(null);
-  const [initial, setInitial] = useState({ food: 5, service: 5, body: "", orderType: "", foods: [] as string[], price: 0, quantity: 1 });
+  const [initial, setInitial] = useState({ food: 5, service: 5, body: "", orderType: "", foods: [] as string[], price: 0, quantity: 1, anonymous: false, images: [] as string[], orderId: null as string | null });
   const [replyFor, setReplyFor] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState("");
 
@@ -561,7 +575,7 @@ function ReviewsTab() {
     if (!editing) return;
     const { error } = await supabase
       .from("reviews")
-      .update({ body: f.body.trim().slice(0, 1000), order_type: f.orderType, food_type: f.foods.join(", ").slice(0, 200), price_per_person: f.price, food_rating: f.food, service_rating: f.service })
+      .update({ body: f.body.trim().slice(0, 1000), order_type: f.orderType, food_type: f.foods.join(", ").slice(0, 200), price_per_person: f.price, food_rating: f.food, service_rating: f.service, quantity: f.quantity, is_anonymous: f.anonymous, image_urls: f.images })
       .eq("id", editing.id);
     if (error) { toast.error(error.message.includes("BANNED_WORD") ? t("filter.blocked") : error.message); return; }
     setEditing(null);
@@ -614,7 +628,7 @@ function ReviewsTab() {
             size="sm"
             aria-label={t("admin.editReview")}
             onClick={() => {
-              setInitial({ food: Number(r.food_rating), service: Number(r.service_rating), body: r.body, orderType: r.order_type, foods: r.food_type ? r.food_type.split(", ").filter(Boolean) : [], price: r.price_per_person, quantity: r.quantity ?? 1 });
+              setInitial({ food: Number(r.food_rating), service: Number(r.service_rating), body: r.body, orderType: r.order_type, foods: r.food_type ? r.food_type.split(", ").filter(Boolean) : [], price: r.price_per_person, quantity: r.quantity ?? 1, anonymous: r.is_anonymous ?? false, images: r.image_urls ?? [], orderId: r.order_id ?? null });
               setEditing({ id: r.id, canteenId: r.canteen_id });
             }}
           >
@@ -672,6 +686,64 @@ function WordsTab() {
   );
 }
 
+/* ---------------- Reports ---------------- */
+function ReportsTab() {
+  const { t, lang } = useI18n();
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["admin-reports"],
+    refetchInterval: 20000,
+    queryFn: async () => {
+      const [{ data: reports }, { data: p }] = await Promise.all([
+        supabase.from("reports").select("*").order("created_at", { ascending: false }).limit(200),
+        supabase.from("profiles").select("id, username"),
+      ]);
+      const names = new Map((p ?? []).map((x) => [x.id, x.username]));
+      return (reports ?? []).map((r) => ({ ...r, reporter: names.get(r.reporter_id) ?? "?" }));
+    },
+  });
+  const sel = useSelection((data ?? []).map((r) => r.id));
+  const invalidate = () => void qc.invalidateQueries({ queryKey: ["admin-reports"] });
+  const setStatus = async (ids: string[], status: string) => {
+    const { error } = await supabase.from("reports").update({ status }).in("id", ids);
+    if (error) { toast.error(error.message); return; }
+    invalidate();
+  };
+  const del = async (ids: string[]) => {
+    const { error } = await supabase.from("reports").delete().in("id", ids);
+    if (error) { toast.error(error.message); return; }
+    sel.clear();
+    invalidate();
+  };
+
+  return (
+    <div className="space-y-3">
+      <BulkBar count={sel.ids.length} allSelected={sel.allSelected} onToggleAll={sel.toggleAll} onDelete={() => del(sel.ids)} />
+      {(data ?? []).length === 0 && <p className="text-sm text-muted-foreground">{t("admin.noPending")}</p>}
+      {(data ?? []).map((r) => (
+        <div key={r.id} className="surface-card flex flex-wrap items-start gap-3 p-3">
+          <Checkbox checked={sel.selected.has(r.id)} onCheckedChange={(v) => sel.toggle(r.id, !!v)} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">
+              {r.target_type} <span className="font-normal text-muted-foreground">@{r.reporter}</span>
+              <span className={"ml-2 rounded-full px-2 py-0.5 text-xs " + (r.status === "open" ? "bg-warning/20" : "bg-muted text-muted-foreground")}>{r.status}</span>
+            </p>
+            {r.reason && <p className="mt-1 text-sm">{r.reason}</p>}
+            {r.context && <p className="mt-1 truncate text-xs text-muted-foreground">“{r.context}”</p>}
+            <p className="mt-1 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString(lang === "en" ? "en-GB" : "id-ID")}</p>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="outline" onClick={() => setStatus([r.id], "resolved")}>{t("admin.markResolved")}</Button>
+            <Button size="sm" variant="ghost" onClick={() => setStatus([r.id], "dismissed")}>{t("admin.dismiss")}</Button>
+            <ConfirmDelete text={t("admin.deleteSelectedConfirm")} onConfirm={() => del([r.id])} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
 function AdminPage() {
   const { t } = useI18n();
   const { user, role, loading } = useAuth();
@@ -699,6 +771,7 @@ function AdminPage() {
           <TabsTrigger value="chats">{t("admin.chats")}</TabsTrigger>
           <TabsTrigger value="forum">{t("admin.forum")}</TabsTrigger>
           <TabsTrigger value="reviews">{t("admin.reviews")}</TabsTrigger>
+          <TabsTrigger value="reports">{t("admin.reports")}</TabsTrigger>
           <TabsTrigger value="words">{t("admin.words")}</TabsTrigger>
         </TabsList>
         <TabsContent value="users" className="mt-6"><UsersTab /></TabsContent>
@@ -707,6 +780,7 @@ function AdminPage() {
         <TabsContent value="chats" className="mt-6"><ChatsTab /></TabsContent>
         <TabsContent value="forum" className="mt-6"><ForumTab /></TabsContent>
         <TabsContent value="reviews" className="mt-6"><ReviewsTab /></TabsContent>
+        <TabsContent value="reports" className="mt-6"><ReportsTab /></TabsContent>
         <TabsContent value="words" className="mt-6"><WordsTab /></TabsContent>
       </Tabs>
     </div>
