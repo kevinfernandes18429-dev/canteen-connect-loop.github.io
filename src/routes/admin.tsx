@@ -516,7 +516,7 @@ function ReviewsTab() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<{ id: string; canteenId: string } | null>(null);
-  const [initial, setInitial] = useState({ food: 5, service: 5, body: "", orderType: "", foods: [] as string[], price: 0, quantity: 1 });
+  const [initial, setInitial] = useState({ food: 5, service: 5, body: "", orderType: "", foods: [] as string[], price: 0, quantity: 1, anonymous: false, images: [] as string[], orderId: null as string | null });
   const [replyFor, setReplyFor] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState("");
 
@@ -614,7 +614,7 @@ function ReviewsTab() {
             size="sm"
             aria-label={t("admin.editReview")}
             onClick={() => {
-              setInitial({ food: Number(r.food_rating), service: Number(r.service_rating), body: r.body, orderType: r.order_type, foods: r.food_type ? r.food_type.split(", ").filter(Boolean) : [], price: r.price_per_person, quantity: r.quantity ?? 1 });
+              setInitial({ food: Number(r.food_rating), service: Number(r.service_rating), body: r.body, orderType: r.order_type, foods: r.food_type ? r.food_type.split(", ").filter(Boolean) : [], price: r.price_per_person, quantity: r.quantity ?? 1, anonymous: r.is_anonymous ?? false, images: r.image_urls ?? [], orderId: r.order_id ?? null });
               setEditing({ id: r.id, canteenId: r.canteen_id });
             }}
           >
