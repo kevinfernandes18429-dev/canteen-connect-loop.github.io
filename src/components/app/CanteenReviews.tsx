@@ -217,12 +217,56 @@ export function ReviewEditor({
           </div>
           <p className="-mt-2 text-xs text-muted-foreground">{t("review.priceAuto")}</p>
           <div className="space-y-1.5">
+            <Label>{t("review.pickOrder")}</Label>
+            <Select
+              value={form.orderId ?? "none"}
+              onValueChange={(v) => setForm({ ...form, orderId: v === "none" ? null : v })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="none">{t("review.noOrder")}</SelectItem>
+                {(myOrders ?? []).map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.pickup_date} · {formatRupiah(o.total)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("review.photos")}</Label>
+            <Input type="file" accept="image/*" multiple disabled={uploading} onChange={(e) => void addPhotos(e.target.files)} />
+            {form.images.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {form.images.map((url) => (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => setForm({ ...form, images: form.images.filter((u) => u !== url) })}
+                    className="relative h-16 w-16 overflow-hidden rounded-lg border border-border"
+                    aria-label={t("common.delete")}
+                  >
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="space-y-1.5">
             <Label>{t("review.body")}</Label>
             <Textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} maxLength={1000} rows={4} />
           </div>
-          <Button className="w-full" onClick={() => onSave(form)} disabled={saving || !form.orderType}>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <Checkbox checked={form.anonymous} onCheckedChange={(v) => setForm({ ...form, anonymous: !!v })} />
+            <span>{t("anon.post")}</span>
+          </label>
+          <p className="-mt-1 text-xs text-muted-foreground">{t("anon.adminNote")}</p>
+          <Button className="w-full" onClick={() => onSave(form)} disabled={saving || uploading || !form.orderType}>
             {t("review.submit")}
           </Button>
+
         </div>
       </DialogContent>
     </Dialog>
