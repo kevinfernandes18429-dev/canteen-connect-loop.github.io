@@ -47,7 +47,14 @@ function Canteens() {
               />
             </div>
             <div className="p-5">
-              <h2 className="font-display text-lg font-bold">{c.name}</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-display text-lg font-bold">{c.name}</h2>
+                {!c.owner_id && (
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                    {t("canteen.closed")}
+                  </span>
+                )}
+              </div>
               <p className="mt-1 text-sm text-muted-foreground">
                 {lang === "en" ? c.description_en || c.description : c.description}
               </p>
