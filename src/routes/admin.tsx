@@ -11,6 +11,7 @@ import { formatClass, isClassComplete, parseClass, serializeClass, type ClassVal
 import { adminDeleteUsers, adminListUsers, adminSetRole, adminUpdateProfile, adminVerifyOwner } from "@/lib/admin.functions";
 import { ReviewEditor, Stars, orderTypeLabel } from "@/components/app/CanteenReviews";
 import { ClassPicker } from "@/components/app/ClassPicker";
+import { uploadMedia } from "@/lib/upload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -323,7 +324,10 @@ function OwnerSignupsTab() {
 /* ---------------- Canteens ---------------- */
 function CanteensTab() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const qc = useQueryClient();
+  const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
   const { data: canteens } = useQuery({
     queryKey: ["admin-canteens"],
     queryFn: async () => {
@@ -336,6 +340,40 @@ function CanteensTab() {
     },
   });
   const [draft, setDraft] = useState<Record<string, { name: string; description: string; description_en: string }>>({});
+
+  const slugify = (v: string) =>
+    v.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+
+  const createCanteen = async () => {
+    const name = newName.trim();
+    if (!name) return;
+    setCreating(true);
+    const { error } = await supabase.from("canteens").insert({
+      name: name.slice(0, 60),
+      slug: slugify(name) || crypto.randomUUID().slice(0, 8),
+      description: "",
+      description_en: "",
+    });
+    setCreating(false);
+    if (error) { toast.error(error.message); return; }
+    setNewName("");
+    toast.success(t("admin.created"));
+    void qc.invalidateQueries({ queryKey: ["admin-canteens"] });
+    void qc.invalidateQueries({ queryKey: ["admin-canteens-lite"] });
+  };
+
+  const setImage = async (id: string, kind: "image_url" | "banner_url", file: File | undefined) => {
+    if (!file || !user) return;
+    try {
+      const url = await uploadMedia(user.id, file, "canteen");
+      const { error } = await supabase.from("canteens").update({ [kind]: url }).eq("id", id);
+      if (error) throw new Error(error.message);
+      toast.success(t("settings.saved"));
+      void qc.invalidateQueries({ queryKey: ["admin-canteens"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
   const save = async (id: string) => {
     const d = draft[id];
@@ -361,7 +399,17 @@ function CanteensTab() {
 
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="space-y-4">
+      <div className="surface-card flex flex-wrap items-end gap-3 p-4">
+        <div className="min-w-56 flex-1 space-y-1.5">
+          <Label>{t("admin.newCanteen")}</Label>
+          <Input value={newName} maxLength={60} placeholder={t("admin.canteenName")} onChange={(e) => setNewName(e.target.value)} />
+        </div>
+        <Button onClick={createCanteen} disabled={creating || !newName.trim()}>
+          {t("admin.newCanteen")}
+        </Button>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
       {(canteens ?? []).map((c) => {
         const d = draft[c.id] ?? { name: c.name, description: c.description, description_en: c.description_en };
         const set = (patch: Partial<typeof d>) => setDraft({ ...draft, [c.id]: { ...d, ...patch } });
@@ -389,10 +437,20 @@ function CanteensTab() {
               </Button>
               <ConfirmDelete text={t("admin.deleteCanteenConfirm")} label={t("admin.deleteCanteen")} onConfirm={() => removeCanteen(c.id)} />
             </div>
-
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label className="text-xs">{t("admin.canteenImage")}</Label>
+                <Input type="file" accept="image/*" onChange={(e) => setImage(c.id, "image_url", e.target.files?.[0])} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">{t("settings.banner")}</Label>
+                <Input type="file" accept="image/*" onChange={(e) => setImage(c.id, "banner_url", e.target.files?.[0])} />
+              </div>
+            </div>
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
