@@ -17,6 +17,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as PromosRouteImport } from './routes/promos'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SellerRouteImport } from './routes/seller'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -63,6 +64,11 @@ const PromosRoute = PromosRouteImport.update({
   path: '/promos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRoute
   '/orders': typeof OrdersRoute
   '/promos': typeof PromosRoute
+  '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller': typeof SellerRoute
   '/settings': typeof SettingsRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRoute
   '/orders': typeof OrdersRoute
   '/promos': typeof PromosRoute
+  '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller': typeof SellerRoute
   '/settings': typeof SettingsRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/chat': typeof ChatRoute
   '/orders': typeof OrdersRoute
   '/promos': typeof PromosRoute
+  '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/seller': typeof SellerRoute
   '/settings': typeof SettingsRoute
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/orders'
     | '/promos'
+    | '/reports'
     | '/reset-password'
     | '/seller'
     | '/settings'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/orders'
     | '/promos'
+    | '/reports'
     | '/reset-password'
     | '/seller'
     | '/settings'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/orders'
     | '/promos'
+    | '/reports'
     | '/reset-password'
     | '/seller'
     | '/settings'
@@ -192,6 +204,7 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRoute
   OrdersRoute: typeof OrdersRoute
   PromosRoute: typeof PromosRoute
+  ReportsRoute: typeof ReportsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SellerRoute: typeof SellerRoute
   SettingsRoute: typeof SettingsRoute
@@ -257,6 +270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PromosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -304,6 +324,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRoute,
   OrdersRoute: OrdersRoute,
   PromosRoute: PromosRoute,
+  ReportsRoute: ReportsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SellerRoute: SellerRoute,
   SettingsRoute: SettingsRoute,
