@@ -116,10 +116,58 @@ function OrdersPage() {
         <TabsList>
           <TabsTrigger value="active">{t("orders.active")}</TabsTrigger>
           <TabsTrigger value="past">{t("orders.past")}</TabsTrigger>
+          <TabsTrigger value="debts">{t("debt.myDebt")}</TabsTrigger>
         </TabsList>
         <TabsContent value="active">{render(list.filter((o) => ACTIVE.includes(o.status)))}</TabsContent>
         <TabsContent value="past">{render(list.filter((o) => !ACTIVE.includes(o.status)))}</TabsContent>
+        <TabsContent value="debts"><MyDebts userId={user.id} /></TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function MyDebts({ userId }: { userId: string }) {
+  const { t, lang } = useI18n();
+  const { data } = useQuery({
+    queryKey: ["my-debts", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("debts")
+        .select("id, amount, note, paid, created_at, canteens(name)")
+        .eq("student_id", userId)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+  const rows = data ?? [];
+  const unpaid = rows.filter((d) => !d.paid).reduce((s, d) => s + d.amount, 0);
+  if (rows.length === 0) return <p className="mt-6 text-sm text-muted-foreground">{t("debt.empty")}</p>;
+  return (
+    <div className="mt-6 space-y-3">
+      <p className="text-sm text-muted-foreground">
+        {t("debt.total")}: <span className="font-semibold text-foreground">{formatRupiah(unpaid)}</span>
+      </p>
+      {rows.map((d) => (
+        <div key={d.id} className="surface-card flex flex-wrap items-center gap-3 p-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">
+              {d.canteens?.name} · {formatRupiah(d.amount)}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {new Date(d.created_at).toLocaleDateString(lang === "en" ? "en-GB" : "id-ID")}
+              {d.note ? ` · ${d.note}` : ""}
+            </p>
+          </div>
+          <span
+            className={
+              "rounded-full px-3 py-1 text-xs font-semibold " +
+              (d.paid ? "bg-success/15 text-success" : "bg-warning/20 text-foreground")
+            }
+          >
+            {d.paid ? t("debt.paid") : t("debt.unpaid")}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
