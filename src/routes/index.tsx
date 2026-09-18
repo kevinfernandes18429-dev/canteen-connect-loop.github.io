@@ -29,8 +29,117 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const { role } = useAuth();
-  if (role === "canteen_owner" || role === "admin") return <StaffHome />;
+  if (role === "admin") return <AdminHome />;
+  if (role === "canteen_owner") return <StaffHome />;
   return <StudentHome />;
+}
+
+function AdminHome() {
+  const { t, lang } = useI18n();
+
+  const { data } = useQuery({
+    queryKey: ["admin-home"],
+    refetchInterval: 30000,
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const [{ data: orders }, { count: users }, { data: reports }, { data: canteens }] = await Promise.all([
+        supabase.from("orders").select("id, total, status, created_at").order("created_at", { ascending: false }).limit(300),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("reports").select("id, target_type, reason, status, created_at").order("created_at", { ascending: false }).limit(20),
+        supabase.from("canteens").select("id, name, slug, image_url, owner_id").order("name"),
+      ]);
+      const rows = orders ?? [];
+      const todays = rows.filter((o) => (o.created_at ?? "").slice(0, 10) === today);
+      const reps = reports ?? [];
+      return {
+        users: users ?? 0,
+        todayRevenue: todays.filter((o) => o.status !== "cancelled").reduce((s, o) => s + o.total, 0),
+        todayOrders: todays.length,
+        totalOrders: rows.length,
+        openReports: reps.filter((r) => r.status === "open").length,
+        todayReports: reps.filter((r) => (r.created_at ?? "").slice(0, 10) === today).length,
+        reports: reps.slice(0, 6),
+        canteens: canteens ?? [],
+      };
+    },
+  });
+
+  const cards = [
+    { label: t("admin.totalUsers"), value: String(data?.users ?? 0), tone: "" },
+    { label: t("owner.todaySales"), value: formatRupiah(data?.todayRevenue ?? 0), tone: "text-accent" },
+    { label: t("owner.todayOrders"), value: String(data?.todayOrders ?? 0), tone: "" },
+    { label: t("admin.todayReports"), value: String(data?.todayReports ?? 0), tone: "text-primary" },
+  ];
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-bold">{t("admin.title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("admin.dashboard")}</p>
+        </div>
+        <Button asChild size="sm">
+          <Link to="/admin">{t("owner.viewAll")}</Link>
+        </Button>
+      </div>
+
+      <div className="stagger mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {cards.map((c) => (
+          <div key={c.label} className="surface-card anim-rise p-5">
+            <p className="text-xs text-muted-foreground">{c.label}</p>
+            <p className={"mt-1 font-display text-2xl font-bold " + c.tone}>{c.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="surface-card p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-lg font-bold">
+              {t("admin.reports")} · {t("admin.openReports")}: {data?.openReports ?? 0}
+            </h2>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/admin">{t("owner.viewAll")}</Link>
+            </Button>
+          </div>
+          <div className="mt-3 space-y-2">
+            {(data?.reports ?? []).length === 0 && <p className="text-sm text-muted-foreground">{t("report.empty")}</p>}
+            {(data?.reports ?? []).map((r) => (
+              <div key={r.id} className="rounded-xl border border-border px-4 py-2.5 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold">{r.target_type}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(r.created_at).toLocaleDateString(lang === "en" ? "en-GB" : "id-ID")}
+                  </span>
+                </div>
+                {r.reason && <p className="truncate text-xs text-muted-foreground">{r.reason}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="surface-card p-5">
+          <h2 className="font-display text-lg font-bold">{t("admin.canteens")}</h2>
+          <div className="mt-3 space-y-2">
+            {(data?.canteens ?? []).map((c) => (
+              <Link
+                key={c.id}
+                to="/canteen/$slug"
+                params={{ slug: c.slug }}
+                className="hover-lift flex items-center gap-3 rounded-xl border border-border px-3 py-2"
+              >
+                <img src={canteenImage(c.slug, c.image_url)} alt={c.name} className="h-10 w-14 rounded-lg object-cover" />
+                <span className="flex-1 text-sm font-semibold">{c.name}</span>
+                {!c.owner_id && (
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">{t("canteen.closed")}</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function StaffHome() {

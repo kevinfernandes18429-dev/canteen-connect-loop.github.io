@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DebtsPanel } from "@/components/app/DebtsPanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -299,6 +300,7 @@ function SellerDashboard({ canteen, lang }: { canteen: Canteen; lang: "id" | "en
         <TabsList>
           <TabsTrigger value="orders">{t("seller.orders")}</TabsTrigger>
           <TabsTrigger value="menu">{t("seller.menu")}</TabsTrigger>
+          <TabsTrigger value="debts">{t("debt.title")}</TabsTrigger>
           <TabsTrigger value="profile">{t("seller.canteenProfile")}</TabsTrigger>
         </TabsList>
 
@@ -555,6 +557,10 @@ function SellerDashboard({ canteen, lang }: { canteen: Canteen; lang: "id" | "en
               </AlertDialog>
             </div>
           ))}
+        </TabsContent>
+
+        <TabsContent value="debts" className="mt-6">
+          <DebtsPanel canteenId={canteen.id} />
         </TabsContent>
 
         <TabsContent value="profile" className="mt-6">

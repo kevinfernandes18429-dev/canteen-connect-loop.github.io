@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -15,6 +17,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { deleteMyAccount } from "@/lib/account.functions";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -210,6 +224,7 @@ function SettingsPage() {
 
         <TabsContent value="security" className="mt-6 space-y-5">
           <TwoFactorPanel />
+          <DangerZone />
         </TabsContent>
 
 
@@ -355,6 +370,56 @@ function TwoFactorPanel() {
           {t("auth.2faTitle")}
         </Button>
       )}
+    </div>
+  );
+}
+
+function DangerZone() {
+  const { t } = useI18n();
+  const { signOut } = useAuth();
+  const router = useRouter();
+  const removeAccount = useServerFn(deleteMyAccount);
+  const [busy, setBusy] = useState(false);
+
+  const run = async () => {
+    setBusy(true);
+    try {
+      await removeAccount({ data: undefined });
+      await signOut();
+      toast.success(t("account.deleted"));
+      await router.navigate({ to: "/" });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="surface-card space-y-3 border-destructive/40 p-5">
+      <div>
+        <p className="font-semibold text-destructive">{t("account.delete")}</p>
+        <p className="text-sm text-muted-foreground">{t("account.deleteDesc")}</p>
+      </div>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive" disabled={busy}>
+            {t("account.delete")}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("account.delete")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("account.deleteConfirm")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={run} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

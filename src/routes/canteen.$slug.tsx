@@ -71,7 +71,13 @@ function CanteenPage() {
     return <p className="mx-auto max-w-6xl px-4 py-16 text-sm text-muted-foreground">{t("common.loading")}</p>;
   }
 
+  const isClosed = !canteen.owner_id;
+
   const openItem = (item: MenuItem) => {
+    if (isClosed) {
+      toast.error(t("canteen.closedNote"));
+      return;
+    }
     if (!user) {
       toast.error(t("nav.signin"));
       return;
@@ -100,7 +106,12 @@ function CanteenPage() {
         <img src={canteen.banner_url || canteenImage(canteen.slug, canteen.image_url)} alt={canteen.name} className="anim-pop h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
         <div className="anim-rise absolute bottom-5 left-1/2 w-full max-w-6xl -translate-x-1/2 px-4">
-          <h1 className="font-display text-3xl font-bold md:text-4xl">{canteen.name}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-display text-3xl font-bold md:text-4xl">{canteen.name}</h1>
+            {!canteen.owner_id && (
+              <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">{t("canteen.closed")}</span>
+            )}
+          </div>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
             {lang === "en" ? canteen.description_en || canteen.description : canteen.description}
           </p>
@@ -108,6 +119,7 @@ function CanteenPage() {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-10">
+        {isClosed && <p className="mb-5 rounded-xl bg-muted p-4 text-sm text-muted-foreground">{t("canteen.closedNote")}</p>}
         <div className="stagger grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {(items ?? []).length === 0 && <p className="text-sm text-muted-foreground">{t("menu.empty")}</p>}
           {(items ?? []).map((item) => (
@@ -128,7 +140,7 @@ function CanteenPage() {
                 <p className="mt-1 line-clamp-2 flex-1 text-sm text-muted-foreground">{item.description}</p>
                 <div className="mt-3 flex items-center justify-between">
                   <span className="font-display font-bold text-accent">{formatRupiah(item.price)}</span>
-                  <Button size="sm" disabled={!item.is_available} onClick={() => openItem(item)}>
+                  <Button size="sm" disabled={!item.is_available || isClosed} onClick={() => openItem(item)}>
                     <ShoppingCart className="mr-1 h-4 w-4" />
                     {t("menu.addToCart")}
                   </Button>
