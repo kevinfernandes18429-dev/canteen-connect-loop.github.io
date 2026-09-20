@@ -26,6 +26,35 @@ export type Database = {
         }
         Relationships: []
       }
+      canteen_managers: {
+        Row: {
+          canteen_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          canteen_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          canteen_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canteen_managers_canteen_id_fkey"
+            columns: ["canteen_id"]
+            isOneToOne: false
+            referencedRelation: "canteens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       canteens: {
         Row: {
           banner_url: string | null
@@ -840,6 +869,10 @@ export type Database = {
       }
       is_conversation_participant: {
         Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
+      manages_canteen: {
+        Args: { _canteen_id: string; _user_id: string }
         Returns: boolean
       }
       purge_inactive_accounts: { Args: never; Returns: number }
