@@ -366,7 +366,8 @@ function CanteensTab() {
     if (!file || !user) return;
     try {
       const url = await uploadMedia(user.id, file, "canteen");
-      const { error } = await supabase.from("canteens").update({ [kind]: url }).eq("id", id);
+      const patch = kind === "image_url" ? { image_url: url } : { banner_url: url };
+      const { error } = await supabase.from("canteens").update(patch).eq("id", id);
       if (error) throw new Error(error.message);
       toast.success(t("settings.saved"));
       void qc.invalidateQueries({ queryKey: ["admin-canteens"] });
