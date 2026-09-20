@@ -208,6 +208,7 @@ function UsersTab() {
                   <ClassPicker value={editing.klass} onChange={(v) => setEditing({ ...editing, klass: v })} />
                 </div>
               )}
+              <AdminUserImages userId={editing.id} />
               <Button
                 onClick={() => editMut.mutate(editing)}
                 disabled={editMut.isPending || (editing.role === "student" && !isClassComplete(editing.klass))}
@@ -317,6 +318,44 @@ function OwnerSignupsTab() {
           <Row key={u.id} u={u} actions={<span className="rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success">{ownedBy.get(u.id)?.name}</span>} />
         ))}
       </section>
+    </div>
+  );
+}
+
+/* ---------------- Admin image editing for a user ---------------- */
+function AdminUserImages({ userId }: { userId: string }) {
+  const { t } = useI18n();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+
+  const pick = async (kind: "avatar" | "banner", file: File | undefined) => {
+    if (!file || !user) return;
+    setBusy(true);
+    try {
+      const url = await uploadMedia(user.id, file, kind);
+      const patch = kind === "avatar" ? { avatar_url: url } : { banner_url: url };
+      const { error } = await supabase.from("profiles").update(patch).eq("id", userId);
+      if (error) throw new Error(error.message);
+      toast.success(t("settings.saved"));
+      void qc.invalidateQueries({ queryKey: ["admin-users"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      <div className="space-y-1">
+        <Label className="text-xs">{t("settings.avatar")}</Label>
+        <Input type="file" accept="image/*" disabled={busy} onChange={(e) => pick("avatar", e.target.files?.[0])} />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">{t("settings.banner")}</Label>
+        <Input type="file" accept="image/*" disabled={busy} onChange={(e) => pick("banner", e.target.files?.[0])} />
+      </div>
     </div>
   );
 }
