@@ -240,6 +240,9 @@ export function AppHeader() {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem asChild>
+                  <Link to="/reports">{t("report.mine")}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link to="/settings">
                     <Settings className="mr-2 h-4 w-4" />
                     {t("nav.settings")}
@@ -291,6 +294,9 @@ export function AppHeader() {
                     {t("nav.admin")}
                   </Link>
                 )}
+                <Link to="/reports" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary">
+                  {t("report.mine")}
+                </Link>
                 <Link to="/settings" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-secondary">
                   {t("nav.settings")}
                 </Link>

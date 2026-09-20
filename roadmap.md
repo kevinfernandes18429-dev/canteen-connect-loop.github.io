@@ -1,18 +1,16 @@
 # Roadmap
 
-## Sedang dikerjakan
+## Selesai
 - [x] Ulasan: anonim, foto, tombol lapor
 - [x] Admin: tab laporan, hapus kantin, kantin yang diajukan saat verifikasi
-- [ ] Catatan utang: panel penjual + tampilan siswa
-
-## Permintaan baru (18 Sep)
-- [ ] User bisa hapus akun sendiri (di pengaturan)
-- [ ] Kantin tanpa pemilik otomatis berstatus "tutup", tetap tampil
-- [ ] Beranda admin = panel admin (laporan hari ini, statistik ringkas)
-- [ ] Admin bisa buat kantin baru (nama jadi kantinnya, bisa diedit)
-- [ ] Penawaran hanya boleh diposting oleh pemilik kantin itu sendiri
-- [ ] Admin bisa ubah gambar: foto profil, banner, gambar kantin
-- [ ] Tab status laporan untuk siswa & pemilik kantin (ditangani/selesai)
+- [x] Catatan utang: panel penjual + tampilan siswa
+- [x] User bisa hapus akun sendiri (di pengaturan)
+- [x] Kantin tanpa pemilik berstatus "tutup", tetap tampil, pesanan diblokir
+- [x] Beranda admin = panel admin (laporan hari ini, statistik ringkas)
+- [x] Admin bisa buat kantin baru dan mengeditnya
+- [x] Penawaran hanya boleh diposting pemilik kantin itu sendiri (UI + aturan database)
+- [x] Admin bisa ubah gambar: foto profil, banner pengguna, gambar & banner kantin
+- [x] Tab status laporan untuk siswa & pemilik kantin (/reports)
 
 ## Belum terverifikasi
-- [ ] Uji alur: 2FA, daftar pemilik, promo, laporan, utang, batasan chat
+- [ ] Uji alur nyata: 2FA, daftar pemilik, promo, laporan, utang, batasan chat
